@@ -19,12 +19,18 @@
                 <div id="tables-container"></div>
             </section>
 
-            <section class="preview-pane">
+            <section class="preview-pane" style="overflow-y: auto">
                 <div class="preview-header">
-                    <h2>Generated Code</h2>
-                    <button id="download-btn" class="secondary-btn">Download .js</button>
+                    <h2>Models (db.js)</h2>
+                    <button id="download-db-btn" class="secondary-btn">Download db.js</button>
                 </div>
-                <pre><code id="code-output" class="language-javascript">// Your Sequelize models will appear here...</code></pre>
+                <pre style="height: 300px"><code id="code-output" class="language-javascript"></code></pre>
+
+                <div class="preview-header" style="margin-top: 1rem">
+                    <h2>Server (server.js)</h2>
+                    <button id="download-server-btn" class="secondary-btn">Download server.js</button>
+                </div>
+                <pre style="height: 400px"><code id="server-output" class="language-javascript"></code></pre>
             </section>
         </main>
 

@@ -93,6 +93,101 @@ function generateSequelizeCode() {
     }
 }
 
+function generateServerCode() {
+    let code = `const express = require("express");\n`;
+    code += `const app = express();\n`;
+    code += `const PORT = process.env.PORT || 3000;\n\n`;
+
+    // Import models from db.js
+    const modelNames = state.tables.map((t) => t.name || "Unnamed").join(", ");
+    code += `const { ${modelNames} } = require("./db");\n\n`;
+
+    code += `app.use(express.json());\n\n`;
+
+    state.tables.forEach((table) => {
+        const model = table.name || "Unnamed";
+        const route = `/${model.toLowerCase()}s`;
+
+        // Figure out which fields are absolutely required for POST/PUT
+        const requiredFields = table.fields.filter((f) => !f.allowNull && !f.primaryKey && !f.autoIncrement);
+        const validationCondition = requiredFields.map((f) => `!req.body.${f.name}`).join(" || ");
+
+        code += `// --- CRUD for ${model} ---\n`;
+
+        // GET ALL
+        code += `app.get("${route}", async (req, res) => {\n`;
+        code += `  try {\n`;
+        code += `    const items = await ${model}.findAll();\n`;
+        code += `    res.json(items);\n`;
+        code += `  } catch (error) {\n`;
+        code += `    res.status(500).json({ error: error.message });\n`;
+        code += `  }\n`;
+        code += `});\n\n`;
+
+        // GET BY ID
+        code += `app.get("${route}/:id", async (req, res) => {\n`;
+        code += `  try {\n`;
+        code += `    const item = await ${model}.findByPk(req.params.id);\n`;
+        code += `    if (!item) return res.status(404).json({ message: "${model} not found" });\n`;
+        code += `    res.json(item);\n`;
+        code += `  } catch (error) {\n`;
+        code += `    res.status(500).json({ error: error.message });\n`;
+        code += `  }\n`;
+        code += `});\n\n`;
+
+        // POST (Create)
+        code += `app.post("${route}", async (req, res) => {\n`;
+        code += `  try {\n`;
+        code += `    if (!req.body || Object.keys(req.body).length === 0) {\n`;
+        code += `      return res.status(400).json({ message: "Request body cannot be empty" });\n`;
+        code += `    }\n`;
+        if (validationCondition) {
+            code += `    if (${validationCondition}) {\n`;
+            code += `      return res.status(400).json({ message: "Missing required fields: ${requiredFields.map((f) => f.name).join(", ")}" });\n`;
+            code += `    }\n`;
+        }
+        code += `    const newItem = await ${model}.create(req.body);\n`;
+        code += `    res.status(201).json(newItem);\n`;
+        code += `  } catch (error) {\n`;
+        code += `    res.status(400).json({ error: error.message });\n`;
+        code += `  }\n`;
+        code += `});\n\n`;
+
+        // PUT (Update)
+        code += `app.put("${route}/:id", async (req, res) => {\n`;
+        code += `  try {\n`;
+        code += `    const item = await ${model}.findByPk(req.params.id);\n`;
+        code += `    if (!item) return res.status(404).json({ message: "${model} not found" });\n`;
+        code += `    await item.update(req.body);\n`;
+        code += `    res.json(item);\n`;
+        code += `  } catch (error) {\n`;
+        code += `    res.status(400).json({ error: error.message });\n`;
+        code += `  }\n`;
+        code += `});\n\n`;
+
+        // DELETE
+        code += `app.delete("${route}/:id", async (req, res) => {\n`;
+        code += `  try {\n`;
+        code += `    const item = await ${model}.findByPk(req.params.id);\n`;
+        code += `    if (!item) return res.status(404).json({ message: "${model} not found" });\n`;
+        code += `    await item.destroy();\n`;
+        code += `    res.json({ message: "${model} deleted successfully" });\n`;
+        code += `  } catch (error) {\n`;
+        code += `    res.status(500).json({ error: error.message });\n`;
+        code += `  }\n`;
+        code += `});\n\n`;
+    });
+
+    code += `app.listen(PORT, () => {\n`;
+    code += `  console.log(\`Server is running on http://localhost:\${PORT}\`);\n`;
+    code += `});\n`;
+
+    document.getElementById("server-output").textContent = code;
+    if (window.Prism) {
+        Prism.highlightElement(document.getElementById("server-output"));
+    }
+}
+
 // --- 3. UI RENDERING & EVENT HANDLING ---
 function renderUI() {
     const container = document.getElementById("tables-container");
@@ -167,6 +262,7 @@ function renderUI() {
     });
 
     generateSequelizeCode();
+    generateServerCode();
 }
 
 // --- 4. STATE MUTATION FUNCTIONS ---
@@ -177,12 +273,14 @@ window.updateTableName = (tableId, newName) => {
     // FIX: Only update the code preview on keystroke.
     // Do NOT call renderUI() here, as it destroys the DOM and kills focus.
     generateSequelizeCode();
+    generateServerCode();
 };
 window.updateField = (tableId, fieldId, key, value) => {
     const table = state.tables.find((t) => t.id === tableId);
     const field = table.fields.find((f) => f.id === fieldId);
     if (field) field[key] = value;
     generateSequelizeCode();
+    generateServerCode();
 };
 
 window.updateAssoc = (tableId, assocId, key, value) => {
@@ -190,6 +288,7 @@ window.updateAssoc = (tableId, assocId, key, value) => {
     const assoc = table.associations.find((a) => a.id === assocId);
     if (assoc) assoc[key] = value;
     generateSequelizeCode();
+    generateServerCode();
 };
 
 window.addTable = () => {
@@ -242,15 +341,23 @@ window.removeAssoc = (tableId, assocId) => {
 // --- 5. INITIALIZATION & EXPORT ---
 document.getElementById("add-table-btn").addEventListener("click", addTable);
 
-document.getElementById("download-btn").addEventListener("click", () => {
-    const code = document.getElementById("code-output").textContent;
+function downloadCode(elementId, filename) {
+    const code = document.getElementById(elementId).textContent;
     const blob = new Blob([code], { type: "text/javascript" });
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "db.js";
+    a.download = filename;
     a.click();
     URL.revokeObjectURL(url);
+}
+
+document.getElementById("download-db-btn").addEventListener("click", () => {
+    downloadCode("code-output", "db.js");
+});
+
+document.getElementById("download-server-btn").addEventListener("click", () => {
+    downloadCode("server-output", "server.js");
 });
 
 // Initial Render
