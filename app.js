@@ -2,30 +2,7 @@
 
 // --- 1. STATE MANAGEMENT ---
 let state = {
-    tables: [
-        {
-            id: 1,
-            name: "Usuario",
-            fields: [
-                { id: 11, name: "id", type: "INTEGER", primaryKey: true, autoIncrement: true, allowNull: false },
-                { id: 12, name: "nombre", type: "STRING", primaryKey: false, autoIncrement: false, allowNull: false },
-            ],
-            associations: [
-                { id: 101, type: "hasMany", target: "Articulo" }, // User hasMany Articles
-            ],
-        },
-        {
-            id: 2,
-            name: "Articulo",
-            fields: [
-                { id: 21, name: "id", type: "INTEGER", primaryKey: true, autoIncrement: true, allowNull: false },
-                { id: 22, name: "descripcion", type: "STRING", primaryKey: false, autoIncrement: false, allowNull: false },
-            ],
-            associations: [
-                { id: 201, type: "belongsTo", target: "Usuario" }, // Article belongsTo User
-            ],
-        },
-    ],
+    tables: [],
 };
 
 const dataTypes = ["STRING", "INTEGER", "FLOAT", "BOOLEAN", "DATE", "TEXT"];
@@ -188,6 +165,11 @@ function generateServerCode() {
     }
 }
 
+function generateCodes() {
+    generateSequelizeCode();
+    generateServerCode();
+}
+
 // --- 3. UI RENDERING & EVENT HANDLING ---
 function renderUI() {
     const container = document.getElementById("tables-container");
@@ -261,8 +243,7 @@ function renderUI() {
         container.appendChild(tableDiv);
     });
 
-    generateSequelizeCode();
-    generateServerCode();
+    generateCodes();
 }
 
 // --- 4. STATE MUTATION FUNCTIONS ---
@@ -270,25 +251,20 @@ window.updateTableName = (tableId, newName) => {
     const table = state.tables.find((t) => t.id === tableId);
     if (table) table.name = newName;
 
-    // FIX: Only update the code preview on keystroke.
-    // Do NOT call renderUI() here, as it destroys the DOM and kills focus.
-    generateSequelizeCode();
-    generateServerCode();
+    generateCodes();
 };
 window.updateField = (tableId, fieldId, key, value) => {
     const table = state.tables.find((t) => t.id === tableId);
     const field = table.fields.find((f) => f.id === fieldId);
     if (field) field[key] = value;
-    generateSequelizeCode();
-    generateServerCode();
+    generateCodes();
 };
 
 window.updateAssoc = (tableId, assocId, key, value) => {
     const table = state.tables.find((t) => t.id === tableId);
     const assoc = table.associations.find((a) => a.id === assocId);
     if (assoc) assoc[key] = value;
-    generateSequelizeCode();
-    generateServerCode();
+    generateCodes();
 };
 
 window.addTable = () => {
