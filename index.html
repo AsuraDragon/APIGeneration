@@ -5,18 +5,17 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
         <title>API Creation - Sequelize Builder</title>
         <link rel="stylesheet" href="style.css" />
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css" rel="stylesheet" />
     </head>
     <body>
         <header>
-            <h1>API Creation</h1>
-            <p>Sequelize Model Generator</p>
+            <h1>Sequelize Model Builder</h1>
+            <p>Design your database tables and relations visually.</p>
         </header>
 
         <main class="container">
             <section class="builder-pane">
-                <div class="actions">
-                    <button id="add-table-btn" class="primary-btn">+ Add Table</button>
-                </div>
+                <button id="add-table-btn" class="primary-btn" style="margin-bottom: 1rem">+ Add New Table</button>
                 <div id="tables-container"></div>
             </section>
 
@@ -25,10 +24,11 @@
                     <h2>Generated Code</h2>
                     <button id="download-btn" class="secondary-btn">Download .js</button>
                 </div>
-                <pre><code id="code-output">// Your Sequelize models will appear here...</code></pre>
+                <pre><code id="code-output" class="language-javascript">// Your Sequelize models will appear here...</code></pre>
             </section>
         </main>
 
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/prism.min.js"></script>
         <script src="app.js"></script>
     </body>
 </html>

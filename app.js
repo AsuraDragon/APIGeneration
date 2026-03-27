@@ -88,6 +88,9 @@ function generateSequelizeCode() {
     code += `};\n`;
 
     document.getElementById("code-output").textContent = code;
+    if (window.Prism) {
+        Prism.highlightElement(document.getElementById("code-output"));
+    }
 }
 
 // --- 3. UI RENDERING & EVENT HANDLING ---
@@ -106,7 +109,8 @@ function renderUI() {
         let html = `
       <div class="table-header">
         <input type="text" value="${table.name}" placeholder="Table Name" 
-               oninput="updateTableName(${table.id}, this.value)">
+               oninput="updateTableName(${table.id}, this.value)"
+               onchange="renderUI()">
         <button class="secondary-btn" onclick="addField(${table.id})">+ Add Field</button>
         <button class="danger-btn" onclick="removeTable(${table.id})">Remove Table</button>
       </div>
@@ -169,10 +173,11 @@ function renderUI() {
 window.updateTableName = (tableId, newName) => {
     const table = state.tables.find((t) => t.id === tableId);
     if (table) table.name = newName;
-    // If a table name changes, re-render the UI so the relationship dropdowns update
-    renderUI();
-};
 
+    // FIX: Only update the code preview on keystroke.
+    // Do NOT call renderUI() here, as it destroys the DOM and kills focus.
+    generateSequelizeCode();
+};
 window.updateField = (tableId, fieldId, key, value) => {
     const table = state.tables.find((t) => t.id === tableId);
     const field = table.fields.find((f) => f.id === fieldId);
